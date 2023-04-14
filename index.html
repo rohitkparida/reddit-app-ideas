@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Reddit API Example</title>
+    <style>
+        h1{
+            color: #ddd;
+        }
+        body {
+            background-color: #212121;
+        }
+
+        #output {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        #output p {
+            background-color: #333;
+            font-size: 12px;
+            color: #919191;
+            text-align: center;
+            padding: 10px;
+            border: 1px solid #aaa;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        #output a {
+            font-weight: 600;
+            color: #ddd;
+            text-decoration: none;
+        }
+
+        #output a:hover {
+            color: #fff;
+        }
+
+        /* #output p:nth-child(odd) {
+            background-color: #e4e4e4;
+        } */
+    </style>
+</head>
+
+<body>
+    <center>
+        <h1>Reddit API Example</h1>
+    </center>
+    <div id="output"></div>
+
+    <script>
+        // const searchTerms = ["app ideas", "app requests", "dream about an app", "I wish there was an app for",
+        //     "Does anyone know if there’s an app that", "I have this great idea for an app that",
+        //     "Why isn’t there an app that", "I can’t find an app that does",
+        //     "It would be so cool if there was an app that", "Someone should make an app that",
+        //     "I need an app that can", "Is there an app out there that",
+        //     "I have a problem that could be solved by an app that", "An app that does would be so helpful",
+        //     "I’m surprised there isn’t an app for", "I’ve been looking for an app that",
+        //     "There should be an app that", "An app that would make my life so much easier"
+        // ];
+        const searchTerms = ["wish there was an app", "is there an app", "want an app", "wish there was a service", "suggest me an app"];
+        
+        const outputDiv = document.querySelector("#output");
+        let allResults = [];
+
+        const promises = searchTerms.map(term => {
+            return fetch(`https://www.reddit.com/search.json?q=${term}`)
+                .then(response => response.json())
+                .then(data => {
+                    const results = data.data.children;
+                    results.forEach(result => {
+                        allResults.push({
+                            term: term,
+                            title: result.data.title,
+                            permalink: result.data.permalink,
+                            created: result.data.created_utc,
+                            author: result.data.author,
+                            subreddit: result.data.subreddit
+                        });
+                    });
+                });
+        });
+
+        Promise.all(promises).then(() => {
+            allResults.sort((a, b) => b.created - a.created);
+            allResults.forEach(result => {
+                const date = new Date(result.created * 1000);
+                const timePassedInHours = Math.round((Date.now() - date) / 1000 / 60 / 60);
+                let timePassedString;
+                if (timePassedInHours < 24) {
+                    timePassedString = `${timePassedInHours} hours ago`;
+                } else {
+                    const days = Math.floor(timePassedInHours / 24);
+                    const hours = timePassedInHours % 24;
+                    timePassedString = `${days} days ${hours} hours ago`;
+                }
+                outputDiv.innerHTML +=
+                    `<p><a href="https://www.reddit.com${result.permalink}">${result.title}</a> (from search: ${result.term})<br>Posted by u/${result.author} in r/${result.subreddit} ${date.toLocaleString()} (${timePassedString})</p>`;
+            });
+        });
+    </script>
+</body>
+
+</html>
