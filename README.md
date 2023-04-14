@@ -5,12 +5,12 @@ This web app uses Reddit's API to curate app ideas and requests that were posted
 ## Features
 
 - Browse app ideas and requests from Reddit
-- Sort by date to see the most recent posts
+- Sorted by date to see the most recent posts
 - Get inspired for your next project
 
 ## Usage
 
-To use the app, simply visit the website and start browsing. You can sort the ideas by date to see the most recent posts.
+To use the app, simply [visit the website](https://rohitkparida.github.io/reddit-app-ideas/) and start browsing. Ideas are sorted by date to see the most recent posts.
 
 ## Contributing
 
