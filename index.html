@@ -1,74 +1,100 @@
 <!DOCTYPE html>
-<html>
-<meta charset="UTF-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang="en">
 
 <head>
-    <title>Reddit App Ideas</title>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reddit App Ideas Curator</title>
     <style>
-        h1 {
-            color: #ddd;
-        }
-
         body {
             background-color: #212121;
+            color: #ddd;
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        h1,#disclaimer, #output{
+            margin: 0 auto 20px auto ;
+            max-width: 96%;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            margin-top: 20px;
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        h1>a{
+            text-decoration: underline;
         }
 
         #output {
-            font-family: Arial, sans-serif;
-            margin: 0 auto;
+            width: 800px;
+            padding: 16px;
+            border: 1px solid #aaa;
+            border-radius: 5px;
         }
 
         p {
             background-color: #333;
-            max-width: 800px;
-            font-size: 12px;
             color: #919191;
+            font-size: 0.75em;
             text-align: center;
+            line-height: 1.75em;
             padding: 10px;
-            border: 1px solid #aaa;
             border-radius: 5px;
-            margin-bottom: 10px;
+            margin: 0 0 12px 0;
+        }
+        p:last-child{
+            margin: 0
         }
 
-        a {
-            font-weight: 600;
+        #title {
             color: #ddd;
-            text-decoration: none;
+            font-weight: 600;
         }
 
-        #output a:hover {
+        a{
+            text-decoration: none;
+            color: #919191;
+        }
+
+        a:hover {
             color: #fff;
         }
     </style>
 </head>
 
 <body>
-    <center>
-        <h1>Reddit's app ideas curator by <a href="https://github.com/rohitkparida">@rohitkparida</a></h1>
-        <p>Disclaimer: I take no responsibility for the content of posts.</p>
+    <h1>Reddit's app ideas curator by <a href="https://github.com/rohitkparida">@rohitkparida</a></h1>
+    <p id="disclaimer">Disclaimer: I take no responsibility for the content of posts.</p>
+    <div id="output"></div>
 
-        <div id="output"></div>
-    </center>
-
-</body>
-<script>
-    const searchTerms = ["is there an app", "want an app", "wish there was a service", "suggest me an app", "looking for an app", "need an app", "searching for an app", "hoping to find an app", "could really use an app", "interested in finding an app", "struggling to find an app", "on the hunt for an app", "wondering if there's an app", "curious if there's an app" ];
-
-    const outputDiv = document.querySelector("#output");
-    let allResults = [];
-
-    const promises = searchTerms.map(term => {
-        return fetch(`https://www.reddit.com/search.json?q=${term}`)
-            .then(response => response.json())
-            .then(data => {
-                const results = data.data.children;
-                results.forEach(result => {
-                    // Check if result already exists in allResults
-                    const resultExists = allResults.some(item => item.permalink === result.data
-                        .permalink);
-                    if (!resultExists) {
+    <script>
+        // Search terms
+        const searchTerms = ["is there an app", "want an app", "wish there was a service", "suggest me an app",
+            "looking for an app", "need an app", "searching for an app", "hoping to find an app",
+            "could really use an app", "interested in finding an app", "struggling to find an app",
+            "on the hunt for an app", "wondering if there's an app", "curious if there's an app"
+        ];
+        const outputDiv = document.querySelector("#output");
+        let allResults = [];
+        const uniqueResults = new Set();
+        let resultsFetched = 0; // Counter for results fetched
+        const resultsPerPage = 20; // Number of results to fetch per page
+        
+        // Fetch Reddit data with error handling and process results
+        const fetchAndProcessResults = async (term) => {
+            try {
+                const response = await fetch(`https://www.reddit.com/search.json?q=${term}`);
+                const data = await response.json();
+                data.data.children.forEach(result => {
+                    if (!uniqueResults.has(result.data.permalink)) {
+                        uniqueResults.add(result.data.permalink);
                         allResults.push({
                             term: term,
                             title: result.data.title,
@@ -79,31 +105,69 @@
                         });
                     }
                 });
-            });
-    });
-
-    Promise.all(promises).then(() => {
-        allResults.sort((a, b) => b.created - a.created);
-        allResults.forEach(result => {
-            const date = new Date(result.created * 1000);
-            const timePassedInHours = Math.round((Date.now() - date) / 1000 / 60 / 60);
-            let timePassedString;
-            if (timePassedInHours < 24) {
-                timePassedString = `${timePassedInHours} hours ago`;
-            } else if (timePassedInHours < 24 * 365) {
-                const days = Math.floor(timePassedInHours / 24);
-                const hours = timePassedInHours % 24;
-                timePassedString = `${days} days ${hours} hours ago`;
-            } else {
-                const years = Math.floor(timePassedInHours / (24 * 365));
-                const days = Math.floor((timePassedInHours % (24 * 365)) / 24);
-                const hours = timePassedInHours % 24;
-                timePassedString = `${years} years ${days} days ${hours} hours ago`;
+            } catch (error) {
+                console.error(`Failed to fetch data for term "${term}":`, error);
             }
-            outputDiv.innerHTML +=
-                `<p><a href="https://www.reddit.com${result.permalink}">${result.title}</a> (from search: ${result.term})<br>Posted by u/${result.author} in r/${result.subreddit} ${date.toLocaleString()} (${timePassedString})</p>`;
+        };
+        
+        // Time calculation function
+        const getTimePassedString = (date) => {
+            const timePassedInSeconds = Math.round((Date.now() - date) / 1000);
+            const hours = Math.floor(timePassedInSeconds / 3600);
+            const days = Math.floor(timePassedInSeconds / 86400);
+            const years = Math.floor(days / 365);
+            const daysWithoutYears = days % 365;
+        
+            if (timePassedInSeconds < 3600) {
+                return `${Math.floor(timePassedInSeconds / 60)} minutes ago`;
+            } else if (timePassedInSeconds < 86400) {
+                return `${hours} hours ago`;
+            } else if (days < 365) {
+                return `${days} days ago`;
+            } else {
+                return `${years} years ${daysWithoutYears} days ago`;
+            }
+        };
+        
+        // Fetch and display results, with caching and lazy loading
+        const fetchAndDisplayResults = async () => {
+            const storedResults = localStorage.getItem('redditResults');
+            if (storedResults) {
+                allResults = JSON.parse(storedResults);
+            } else {
+                const promises = searchTerms.map(term => fetchAndProcessResults(term));
+                await Promise.all(promises);
+                localStorage.setItem('redditResults', JSON.stringify(allResults));
+            }
+            displayResults();
+        };
+        
+        const displayResults = () => {
+    allResults.sort((a, b) => b.created - a.created);
+    const fragment = document.createDocumentFragment();
+    for (let i = resultsFetched; i < resultsFetched + resultsPerPage && i < allResults.length; i++) {
+        const result = allResults[i];
+        const date = new Date(result.created * 1000);
+        const timePassedString = getTimePassedString(date);
+        const p = document.createElement('p');
+        p.innerHTML =
+            `<a href="https://www.reddit.com${result.permalink}" target="_blank" id="title">${result.title}</a> (from search: ${result.term})<br>Posted by <a href="https://www.reddit.com/user/${result.author}" target="_blank">u/${result.author}</a> in <a href="https://www.reddit.com/r/${result.subreddit}/" target="_blank">r/${result.subreddit}</a> ${date.toLocaleString()} (${timePassedString})`;
+        fragment.appendChild(p);
+    }
+    resultsFetched += resultsPerPage;
+    outputDiv.appendChild(fragment);
+};
+
+        
+        // Add scroll event listener
+        window.addEventListener('scroll', () => {
+            if (window.innerHeight + window.scrollY >= document.body.offsetHeight) {
+                displayResults();
+            }
         });
-    });
-</script>
+        
+        fetchAndDisplayResults();
+        </script>
+</body>
 
 </html>
